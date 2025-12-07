@@ -5,7 +5,7 @@
   gather_facts: false
 
   vars:
-    project_id: "multicloudproject-460511"
+    project_id: "ansible-gcp-project-480514"
     zone: "asia-south1-a"
 
   tasks:
