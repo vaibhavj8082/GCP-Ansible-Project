@@ -1,31 +1,43 @@
 ---
-- name: Create GCP VM Instance using Ansible
-  hosts: localhost
+- name: Create GCE instance via google.cloud
+  hosts: local
   connection: local
-  gather_facts: false
-
+  gather_facts: no
   vars:
-    project_id: "ansible-gcp-project-480514"
-    zone: "asia-south1-a"
-
+    project: ansible-gcp-project-480514        # overwritten from Jenkins extra-vars or change here
+    zone: us-central1-a                 # overwrite as needed
+    instance_name: test-ansible-vm
+    machine_type: e2-medium
+    image_family: debian-11
+    image_project: debian-cloud
+    network: default
+    # service account json file path passed from Jenkins via --extra-vars gcp_sa_file=/tmp/... 
+    # (do not hardcode in repo)
   tasks:
-    - name: Create GCP VM instance
+    - name: Ensure google.cloud collection is present
+      ansible.builtin.meta: require_collection
+      args:
+        name: google.cloud
+
+    - name: Create GCE instance (idempotent)
       google.cloud.gcp_compute_instance:
-        name: "ansible-instance"
-        machine_type: "e2-micro"
+        name: "{{ instance_name }}"
+        machine_type: "{{ machine_type }}"
         zone: "{{ zone }}"
-        project: "{{ project_id }}"
+        project: "{{ project }}"
         disks:
           - auto_delete: true
             boot: true
             initialize_params:
-              source_image: "projects/debian-cloud/global/images/family/debian-11"
+              source_image: "projects/{{ image_project }}/global/images/family/{{ image_family }}"
         network_interfaces:
-          - network:
-              selfLink: "global/networks/default"
-            access_configs:
-              - type: ONE_TO_ONE_NAT
-                name: "External NAT"
-        auth_kind: serviceaccount
-        service_account_file: "{{ lookup('env','GOOGLE_APPLICATION_CREDENTIALS') }}"
+          - network: "{{ network }}"
         state: present
+        # auth using service account JSON file passed by Jenkins
+        auth_kind: serviceaccount
+        service_account_file: "{{ gcp_sa_file }}"
+      register: vm_result
+
+    - name: Show created instance details
+      ansible.builtin.debug:
+        var: vm_result
