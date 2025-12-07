@@ -1,0 +1,31 @@
+---
+- name: Create GCP VM Instance using Ansible
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    project_id: "multicloudproject-460511"
+    zone: "asia-south1-a"
+
+  tasks:
+    - name: Create GCP VM instance
+      google.cloud.gcp_compute_instance:
+        name: "ansible-instance"
+        machine_type: "e2-micro"
+        zone: "{{ zone }}"
+        project: "{{ project_id }}"
+        disks:
+          - auto_delete: true
+            boot: true
+            initialize_params:
+              source_image: "projects/debian-cloud/global/images/family/debian-11"
+        network_interfaces:
+          - network:
+              selfLink: "global/networks/default"
+            access_configs:
+              - type: ONE_TO_ONE_NAT
+                name: "External NAT"
+        auth_kind: serviceaccount
+        service_account_file: "{{ lookup('env','GOOGLE_APPLICATION_CREDENTIALS') }}"
+        state: present
