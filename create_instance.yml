@@ -1,37 +1,26 @@
----
-- name: Create GCE instance via google.cloud
-  hosts: local
+- name: Create GCP VM Instance
+  hosts: localhost
   connection: local
-  gather_facts: no
-
   vars:
-    project: ansible-gcp-project-480514
-    zone: us-central1-a
-    instance_name: test-ansible-vm
-    machine_type: e2-medium
-    image_family: debian-11
-    image_project: debian-cloud
-    network: default
-
+    gcp_project: "ansible-gcp-project-480514"
+    gcp_zone: "us-central1-a"
   tasks:
-    - name: Create GCE instance (idempotent)
+    - name: Create instance
       google.cloud.gcp_compute_instance:
-        name: "{{ instance_name }}"
-        machine_type: "{{ machine_type }}"
-        zone: "{{ zone }}"
-        project: "{{ project }}"
-        disks:
-          - auto_delete: true
-            boot: true
-            initialize_params:
-              source_image: "projects/{{ image_project }}/global/images/family/{{ image_family }}"
-        network_interfaces:
-          - network: "{{ network }}"
-        state: present
+        name: "jenkins-ansible-vm"
+        machine_type: "e2-micro"
+        zone: "{{ gcp_zone }}"
+        project: "{{ gcp_project }}"
         auth_kind: serviceaccount
         service_account_file: "{{ gcp_sa_file }}"
-      register: vm_result
+        disks:
+        - auto_delete: true
+          boot: true
+          initialize_params:
+            source_image: "projects/debian-cloud/global/images/family/debian-11"
+        network_interfaces:
+        - network: "default"
+      register: result
 
-    - name: Show created instance details
-      debug:
-        var: vm_result
+    - debug:
+        var: result
