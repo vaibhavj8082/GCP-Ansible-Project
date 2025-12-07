@@ -1,9 +1,12 @@
+---
 - name: Create GCP VM Instance
   hosts: localhost
   connection: local
+
   vars:
     gcp_project: "ansible-gcp-project-480514"
     gcp_zone: "us-central1-a"
+
   tasks:
     - name: Create instance
       google.cloud.gcp_compute_instance:
@@ -13,14 +16,20 @@
         project: "{{ gcp_project }}"
         auth_kind: serviceaccount
         service_account_file: "{{ gcp_sa_file }}"
+        state: present
         disks:
-        - auto_delete: true
-          boot: true
-          initialize_params:
-            source_image: "projects/debian-cloud/global/images/family/debian-11"
+          - auto_delete: true
+            boot: true
+            initialize_params:
+              source_image: "projects/debian-cloud/global/images/family/debian-11"
         network_interfaces:
-        - network: "default"
-      register: result
+          - network:
+              name: "default"
+            access_configs:
+              - name: "External NAT"
+                type: "ONE_TO_ONE_NAT"
+      register: gce
 
-    - debug:
-        var: result
+    - name: Show VM Info
+      debug:
+        var: gce
